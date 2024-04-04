@@ -35,36 +35,36 @@ bool performAlgebraicIdentity(Instruction &Inst, Instruction::BinaryOps OptType)
 			switch (OptType) {
 				case Instruction::Add: {
 					// Se uno degli operandi è zero, sostituisco l'istruzione con l'altro operando
-					if (C && C->isZero()) {
+					if (C->isZero()) {
 						Inst.replaceAllUsesWith(Inst.getOperand(1-i));
-						llvm::outs() << "Algebraic identity applied: " << Inst << "\n";
+						llvm::outs() << "Algebraic identity applied:" << Inst << "  =>" << *Inst.getOperand(1-i) << "\n";
 						return true;
 					} 
 					break;
 				}
 				case Instruction::Sub: {
 					// Se il secondo operando è zero, sostituisco l'istruzione con il primo operando
-					if (i == 1 && C && C->isZero()) {
+					if (i == 1 && C->isZero()) {
 						Inst.replaceAllUsesWith(Inst.getOperand(1-i));
-						llvm::outs() << "Algebraic identity applied: " << Inst << "\n";
+						llvm::outs() << "Algebraic identity applied:" << Inst << "  =>" << *Inst.getOperand(1-i) << "\n";
 						return true;
 					} 
 					break;
 				}
 				case Instruction::Mul: {
 					// Se uno degli operandi è uno, sostituisco l'istruzione con l'altro operando
-					if (C && C->isOne()) {
+					if (C->isOne()) {
 						Inst.replaceAllUsesWith(Inst.getOperand(1-i));
-						llvm::outs() << "Algebraic identity applied: " << Inst << "\n";
+						llvm::outs() << "Algebraic identity applied:" << Inst << "  =>" << *Inst.getOperand(1-i) << "\n";
 						return true;
 					} 
 					break;
 				}
 				case Instruction::SDiv: {
 					// Se il secondo operando è uno, sostituisco l'istruzione con l'altro operando
-					if (i == 1 && C && C->isOne()) {
+					if (i == 1 && C->isOne()) {
 						Inst.replaceAllUsesWith(Inst.getOperand(1-i));
-						llvm::outs() << "Algebraic identity applied: " << Inst << "\n";
+						llvm::outs() << "Algebraic identity applied:" << Inst << "  =>" << *Inst.getOperand(1-i) << "\n";
 						return true;
 					}
 					break;
@@ -94,7 +94,7 @@ bool performMultiplicationStrengthReduction(Instruction &Inst) {
                 BinaryOperator *ShiftOp = BinaryOperator::Create(Instruction::Shl, X, ConstantInt::get(C->getType(), C->getValue().exactLogBase2()));
                 ShiftOp->insertAfter(&Inst);
                 Inst.replaceAllUsesWith(ShiftOp);
-                llvm::outs() << "Strength reduction applied: " << Inst << " =>" << *ShiftOp << "\n";
+                llvm::outs() << "Strength reduction applied:" << Inst << "  =>" << *ShiftOp << "\n";
                 return true;
             } else {
                 // Se il valore non è una costante potenza di due, esegui la strength reduction con shift e sottrazione o addizione
@@ -117,13 +117,13 @@ bool performMultiplicationStrengthReduction(Instruction &Inst) {
 						BinaryOperator *SubOp = BinaryOperator::Create(Instruction::Sub, ShiftOp, X);
 						SubOp->insertAfter(ShiftOp);
 						Inst.replaceAllUsesWith(SubOp);
-						llvm::outs() << "Strength reduction applied: " << Inst << " =>" << *ShiftOp << " and " << *SubOp << "\n";
+						llvm::outs() << "Strength reduction applied:" << Inst << "  =>" << *ShiftOp << "  and" << *SubOp << "\n";
 					} else {
 						// Altrimenti, esegui un'operazione di addizione
 						BinaryOperator *AddOp = BinaryOperator::Create(Instruction::Add, ShiftOp, X);
 						AddOp->insertAfter(ShiftOp);
 						Inst.replaceAllUsesWith(AddOp);
-						llvm::outs() << "Strength reduction applied: " << Inst << " =>" << *ShiftOp << " and " << *AddOp << "\n";
+						llvm::outs() << "Strength reduction applied:" << Inst << "  =>" << *ShiftOp << "  and" << *AddOp << "\n";
 					}
 
 					return true;
@@ -148,7 +148,7 @@ bool performDivisionStrengthReduction(Instruction &Inst) {
             BinaryOperator *ShiftOp = BinaryOperator::Create(Instruction::AShr, X, ConstantInt::get(C->getType(), C->getValue().logBase2()));
             ShiftOp->insertAfter(&Inst);
             Inst.replaceAllUsesWith(ShiftOp);
-            llvm::outs() << "Strength reduction applied: " << Inst << " =>" << *ShiftOp << "\n";
+            llvm::outs() << "Strength reduction applied:" << Inst << "  =>" << *ShiftOp << "\n";
             return true;
         }
     }
@@ -176,7 +176,7 @@ bool performMultiInstructionOptimization(Instruction &Inst, Instruction::BinaryO
                         if (BinOp->getOperand(1) == Inst.getOperand(0) || BinOp->getOperand(1) == Inst.getOperand(1)) {
                             // Sostituisci con l'altro operando dell'addizione
                             BinOp->replaceAllUsesWith(Inst.getOperand(0));
-                            llvm::outs() << "Multi Instruction Optimization: " << Inst << " and " << *BinOp <<"\n";
+                            llvm::outs() << "Multi Instruction Optimization:" << Inst << "  and" << *BinOp <<"\n";
                             return true;
                         }
                     }
@@ -192,7 +192,7 @@ bool performMultiInstructionOptimization(Instruction &Inst, Instruction::BinaryO
                         if (BinOp->getOperand(1) == Inst.getOperand(1)) {
                             // Sostituisci con il primo operando della sottrazione
                             BinOp->replaceAllUsesWith(Inst.getOperand(0));
-                            llvm::outs() << "Multi Instruction Optimization: " << Inst << " and " << *BinOp <<"\n";
+                            llvm::outs() << "Multi Instruction Optimization:" << Inst << "  and" << *BinOp <<"\n";
                             return true;
                         }
                     }
@@ -200,7 +200,7 @@ bool performMultiInstructionOptimization(Instruction &Inst, Instruction::BinaryO
                     else if (BinOp->getOperand(0) == Inst.getOperand(1)) {
                         // Sostituisci con il primo operando della sottrazione
                         BinOp->replaceAllUsesWith(Inst.getOperand(0));
-                        llvm::outs() << "Multi Instruction Optimization: " << Inst << " and " << *BinOp <<"\n";
+                        llvm::outs() << "Multi Instruction Optimization:" << Inst << "  and" << *BinOp <<"\n";
                         return true;
                     }
                 }
