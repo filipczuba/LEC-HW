@@ -2,7 +2,7 @@
 
 Repository contentente i Homework del corso di Linguaggi e Compilatori del CdL in Informatica dell'Università di Modena e Reggio Emilia.
 
-## Membri del gruppo
+## Membri del gruppo (Gruppo 21)
 
 - [Filip Czuba (168966)](https://github.com/filipczuba)
 - [Riccardo Massi (152341)](https://github.com/riccardomass)
