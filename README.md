@@ -4,8 +4,8 @@ Repository contentente i Homework del corso di Linguaggi e Compilatori del CdL i
 
 ## Membri del gruppo
 
-- [Filip Czuba](https://github.com/filipczuba)
-- [Riccardo Massi](https://github.com/riccardomass)
+- [Filip Czuba (168966)](https://github.com/filipczuba)
+- [Riccardo Massi (152341)](https://github.com/riccardomass)
 
 ## Struttura della Repository
 
