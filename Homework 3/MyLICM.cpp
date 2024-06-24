@@ -1,24 +1,6 @@
-//===-- LoopWalk.cpp ----------------------------------------------------===//
-//
-// Questo file va inserito in llvm/lib/Transforms/Utils
-// E aggiunto dentro al file llvm/lib/Transforms/Utils/CMakeLists.txt
-//
-// Poi aggiungere il passo LOOP_PASS("LoopWalk", LoopWalk()) 
-// in llvm/lib/Passes/PassRegistry.def
-//
-// Ricordarsi di guardare LoopWalk.h e aggiungere anche quel file
-//
-//===----------------------------------------------------------------------===//
-
-
 #include "llvm/Transforms/Utils/MyLICM.h"
-#include "llvm/IR/Instructions.h"
-#include "llvm/IR/InstrTypes.h"
 #include "llvm/Analysis/LoopInfo.h"
-#include <llvm/IR/Dominators.h>
-#include "llvm/Analysis/LoopAnalysisManager.h"
-#include "llvm/Transforms/Scalar/LoopPassManager.h"
-#include <llvm/IR/IRBuilder.h>
+#include "llvm/IR/Dominators.h"
 
 
 
@@ -98,6 +80,11 @@ bool MyLICM::moveHoistableInstructions(Loop &L,LoopStandardAnalysisResults &LAR)
 	llvm::SmallVector<std::pair<BasicBlock *, BasicBlock*>> EE;
 	L.getExitEdges(EE);
 	auto *PH = L.getLoopPreheader();
+
+	if(!PH) {
+		llvm::outs()<<"Il loop non è in forma canonica.\n";
+		return false;
+	}
 
 	
 	for(auto *BB : L.getBlocks()) {
