@@ -1,12 +1,18 @@
+//===-- MyLICM.cpp ----------------------------------------------------===//
+//
+// Questo file va inserito in llvm/lib/Transforms/Utils
+// E aggiunto dentro al file llvm/lib/Transforms/Utils/CMakeLists.txt
+//
+// Poi aggiungere il passo LOOP_PASS("MyLICM", MyLICM())
+// in llvm/lib/Passes/PassRegistry.def
+//
+// Ricordarsi di guardare MyLICM.h e aggiungere anche quel file
+//
+//===----------------------------------------------------------------------===//
+
 #include "llvm/Transforms/Utils/MyLICM.h"
-#include "llvm/Analysis/LoopInfo.h"
-#include "llvm/IR/Dominators.h"
-
-
 
 using namespace llvm;
-
-
 
 void MyLICM::markInstruction(Instruction &Inst,int InstructionOrder) {
 	LLVMContext& C = Inst.getContext();
