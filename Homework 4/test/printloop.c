@@ -6,19 +6,23 @@ int main() {
 	int A[10];
 	int B[10];
 	int C[10];
+	int a = 0;
+	int b = 0;
 	for(int i = 0; i<n;i++) {
-		A[i]=i;
+		a++;
+		A[i]=a;
 		printf("I: %d\n",A[i]);
 	
 	}
 	
 	for(int j = 0; j<n;j++){
-		B[j]=A[j]+2;
+		b+=2;
+		B[j]=b;
 		printf("J: %d\n",B[j]);
 }
 
 	for(int k = 0; k<n;k++) {
-		C[k] = B[k]*3;
+		C[k] = k;
 		printf("K: %d\n",C[k]);
 	}
 
