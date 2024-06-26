@@ -1,8 +1,26 @@
+//===-- MyLoopFusion.h
+//-------------------------------------------------------===//
+//
+// This file should be placed in llvm/include/llvm/Transforms/Utils
+// and included inside llvm/lib/Passes/PassBuilder.cpp like this:
+//      #include "llvm/Transforms/Utils/MyLoopFusion.h"
+//
+// Don't forget to include MyLoopFusion.cpp and add that file as well
+//
+//===----------------------------------------------------------------------===//
+
 #ifndef LLVM_TRANSFORMS_MYLOOPFUSION_H
 #define LLVM_TRANSFORMS_MYLOOPFUSION_H
 
 #include "llvm/IR/PassManager.h"
 #include "llvm/Analysis/LoopInfo.h"
+#include "llvm/Analysis/LoopInfo.h"
+#include "llvm/IR/Dominators.h"
+#include "llvm/Analysis/PostDominators.h"
+#include "llvm/Analysis/ScalarEvolution.h"
+#include "llvm/Analysis/DependenceAnalysis.h"
+#include "llvm/Transforms/Utils/BasicBlockUtils.h"
+#include "llvm/Analysis/ScalarEvolutionExpressions.h"
 
 namespace llvm {
     class MyLoopFusion : public PassInfoMixin<MyLoopFusion> {
