@@ -37,6 +37,8 @@ BasicBlock *MyLoopFusion::getLoopExit(Loop *L) {
   } else {
     return L->getExitBlock();
   }
+
+  return nullptr;
 }
 
 // Verifica se i cicli sono adiacenti
@@ -84,25 +86,19 @@ bool MyLoopFusion::areLoopsIndependent(Loop *Lprev, Loop *Lnext, Function &F,
                                        FunctionAnalysisManager &FAM) {
   DependenceInfo &DI = FAM.getResult<DependenceAnalysis>(F);
 
-  // Controlla se ci sono dipendenze tra le istruzioni dei due cicli, in particolare se c'è dipendenza tra una store precedente/successiva
-  // e una load/store successiva/precedente.
-  // Nel caso venissero incrociate tra loro tutte le load/store, due loop dove il primo modifica l'array in i e il secondo, ad esempio,
-  // stampa il valore dell'array in i non potrebbero essere fusi.
+  //Se sono presenti load/store nei cicli controlla che non siano dipendenti, in tal caso non si procederà con il merge.
 
   for (auto *BB : Lprev->getBlocks()) {
     for (auto &I : *BB) {
       for (auto *BB2 : Lnext->getBlocks()) {
         for (auto &I2 : *BB2) {
-          if (((isa<StoreInst>(&I)) &&
-               (isa<LoadInst>(&I2) || isa<StoreInst>(&I2))) &&
-              ((isa<StoreInst>(&I2)) &&
-               (isa<LoadInst>(&I) || isa<StoreInst>(&I)))) {
-            if (DI.depends(&I, &I2, true))
-              return false;
-          }
+            if (((isa<StoreInst>(&I)) && (isa<LoadInst>(&I2) || isa<StoreInst>(&I2))) || ((isa<StoreInst>(&I2)) && (isa<LoadInst>(&I) || isa<StoreInst>(&I)))) {
+                    std::unique_ptr<Dependence> DEP = DI.depends(&I, &I2, true);
+                    if (DEP) return false;
+            }
         }
-      }
     }
+  }
   }
 
   return true;
@@ -127,7 +123,13 @@ PHINode *MyLoopFusion::getIVForNonRotatedLoops(Loop *L, ScalarEvolution &SE) {
       
       //Se tale variabile fa riferimento al nostro loop allora la restituisco.
       if (PHIasADDREC->getLoop() == L) {
-        return &PHI;
+        for(auto U : PHI.users()) {
+            if(ICmpInst* Cmp = dyn_cast<ICmpInst>(U)) {
+                if (L->contains(Cmp)) {
+                    return &PHI;
+                }
+            }
+        }
       }
     }
   }
@@ -159,8 +161,8 @@ Loop *MyLoopFusion::merge(Loop *Lprev, Loop *Lnext, Function &F,
 
   // Sostituisce tutte le occorrenze della variabile di induzione del secondo
   // ciclo con quella del primo ciclo
-  NIV->replaceAllUsesWith(PIV);
-  NIV->removeFromParent();
+    NIV->replaceAllUsesWith(PIV);
+    NIV->eraseFromParent();
 
   //Il seguente blocco di istruzioni sposta le istruzioni PHI dal secondo loop al primo, cambiando i BB incoming.
   //Questo permette la fusione di loop dove il secondo, ad esempio, prsenta l'istruzione a++ con a dichiarato fuori dai loop.
@@ -187,6 +189,8 @@ Loop *MyLoopFusion::merge(Loop *Lprev, Loop *Lnext, Function &F,
       }
     }
   }
+
+    
 
   // Aggiorna i terminatori per collegare i due cicli
   PH->getTerminator()->replaceSuccessorWith(PE, NE);
