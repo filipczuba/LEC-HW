@@ -16,7 +16,7 @@ using namespace llvm;
 
 
 //Le seguenti 3 funzioni sono responsabili di marcare, demarcare o controllare la marcatura delle istruzioni.
-//Invece di salvare in un vettore le istruzioni candidate al hoisting esse vengono marcate, in quanto, per costruzione,
+//Invece di salvare in un vettore le istruzioni candidate all'hoisting esse vengono marcate, in quanto, per costruzione,
 //Sono già in ordine all'interno dei BB.
 
 
