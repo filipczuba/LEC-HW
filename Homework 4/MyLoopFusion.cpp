@@ -84,7 +84,11 @@ bool MyLoopFusion::areLoopsIndependent(Loop *Lprev, Loop *Lnext, Function &F,
                                        FunctionAnalysisManager &FAM) {
   DependenceInfo &DI = FAM.getResult<DependenceAnalysis>(F);
 
-  // Controlla se ci sono dipendenze tra le istruzioni dei due cicli
+  // Controlla se ci sono dipendenze tra le istruzioni dei due cicli, in particolare se c'è dipendenza tra una store precedente/successiva
+  // e una load/store successiva/precedente.
+  // Nel caso venissero incrociate tra loro tutte le load/store, due loop dove il primo modifica l'array in i e il secondo, ad esempio,
+  // stampa il valore dell'array in i non potrebbero essere fusi.
+
   for (auto *BB : Lprev->getBlocks()) {
     for (auto &I : *BB) {
       for (auto *BB2 : Lnext->getBlocks()) {
@@ -104,16 +108,24 @@ bool MyLoopFusion::areLoopsIndependent(Loop *Lprev, Loop *Lnext, Function &F,
   return true;
 }
 
-// Ottiene la variabile di induzione per i cicli non ruotati
+// Ottiene la variabile di induzione per i cicli non ruotati, in quanto GetInductionVariable(ScalarEvolution &) lo richiede per
+// i loop non canonici.
 PHINode *MyLoopFusion::getIVForNonRotatedLoops(Loop *L, ScalarEvolution &SE) {
 
+  //Se canonico restituisco immediatamente la variabile di induzione, in quanto la funzione funziona anche su loop non ruotati.
   if (L->isCanonical(SE))
     return L->getCanonicalInductionVariable();
 
+  // Altrimenti scorro le funzion phi del header ed estraggo la prima istruzione phi che può essere convertita a trip count polinomiale.
   for (auto &PHI : L->getHeader()->phis()) {
+
+    //Converto da PHI a SCEV
     const SCEV *PHISCEV = SE.getSCEV(&PHI);
 
+    //Verifico se può essere una variabile di induzione.
     if (auto *PHIasADDREC = dyn_cast<SCEVAddRecExpr>(PHISCEV)) {
+      
+      //Se tale variabile fa riferimento al nostro loop allora la restituisco.
       if (PHIasADDREC->getLoop() == L) {
         return &PHI;
       }
@@ -150,6 +162,10 @@ Loop *MyLoopFusion::merge(Loop *Lprev, Loop *Lnext, Function &F,
   NIV->replaceAllUsesWith(PIV);
   NIV->removeFromParent();
 
+  //Il seguente blocco di istruzioni sposta le istruzioni PHI dal secondo loop al primo, cambiando i BB incoming.
+  //Questo permette la fusione di loop dove il secondo, ad esempio, prsenta l'istruzione a++ con a dichiarato fuori dai loop.
+  //In caso contrario l'incremento non sarebbe possibile in quanto il nodo PHI non avrebbe i riferimenti corretti.
+  
   // Prendi tutti i PHINodes in NextHeader
   SmallVector<PHINode *, 8> PHIsToMove;
   for (Instruction &I : *NH) {
@@ -158,7 +174,7 @@ Loop *MyLoopFusion::merge(Loop *Lprev, Loop *Lnext, Function &F,
     }
   }
 
-  // Find the first non-PHI instruction in PrevHeader
+  // Punto di inserimento ottenuto come prima istruzione non-PHI del header
   Instruction *InsertPoint = PH->getFirstNonPHI();
   // Modifica gli IncomingBlock dei PHINodes
   for (PHINode *PHI : PHIsToMove) {
@@ -190,6 +206,11 @@ Loop *MyLoopFusion::merge(Loop *Lprev, Loop *Lnext, Function &F,
 PreservedAnalyses MyLoopFusion::run(Function &F, FunctionAnalysisManager &FAM) {
   LoopInfo &LI = FAM.getResult<LoopAnalysis>(F);
 
+
+  /*Si itera sui loop, tenendo salvato il puntatore all'ultimo loop preso in analisi, ciò permette di
+   *"accorpare" i loop assieme finché non se ne trova uno "non accorpabile". A quel punto il puntatore scorre
+   *al primo loop non ottimizzato.
+   */
   Loop *Lprev = nullptr;
   bool hasBeenOptimized = false;
   for (auto iter = LI.rbegin(); iter != LI.rend(); ++iter) {
