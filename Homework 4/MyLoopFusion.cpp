@@ -90,15 +90,19 @@ bool MyLoopFusion::areLoopsIndependent(Loop *Lprev, Loop *Lnext, Function &F,
 
   for (auto *BB : Lprev->getBlocks()) {
     for (auto &I : *BB) {
-      for (auto *BB2 : Lnext->getBlocks()) {
-        for (auto &I2 : *BB2) {
-            if (((isa<StoreInst>(&I)) && (isa<LoadInst>(&I2) || isa<StoreInst>(&I2))) || ((isa<StoreInst>(&I2)) && (isa<LoadInst>(&I) || isa<StoreInst>(&I)))) {
-                    std::unique_ptr<Dependence> DEP = DI.depends(&I, &I2, true);
-                    if (DEP) return false;
+      if (isa<LoadInst>(&I) || isa<StoreInst>(&I)) {
+        for (auto *BB2 : Lnext->getBlocks()) {
+          for (auto &I2 : *BB2) {
+            if (isa<LoadInst>(&I2) || isa<StoreInst>(&I2)) {
+              auto DEP = DI.depends(&I, &I2, true);
+              if (DEP) {
+                return false;
+              }
             }
+          }
         }
+      }
     }
-  }
   }
 
   return true;
