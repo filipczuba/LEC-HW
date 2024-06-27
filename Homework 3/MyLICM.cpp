@@ -130,12 +130,12 @@ bool MyLICM::moveHoistableInstructions(Loop &L,LoopStandardAnalysisResults &LAR)
 				for(auto &E : EE) {
 
 					if(LAR.DT.dominates(&I,E.second) || isDOL(I,L)) {
-						bool areUseesMoved = true;
+							bool areUseesMoved = true;
 
 						for(const auto &U : I.operands()) {
 
 							if(auto *Usee = dyn_cast<Instruction>(U)){
-								if((Usee->getParent()!=PH)) {
+								if(!(LAR.DT.dominates(Usee,E.second) || isDOL(*Usee,L)))  {
 									areUseesMoved = false;
 							}
 							}
@@ -143,10 +143,11 @@ bool MyLICM::moveHoistableInstructions(Loop &L,LoopStandardAnalysisResults &LAR)
 						if(areUseesMoved) {
 							hasChanged = true;
 							I.moveBefore(PH->getTerminator());
-						}
+
 
 					}
 
+				}
 				}
 			}
 		
