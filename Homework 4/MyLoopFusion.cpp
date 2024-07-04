@@ -108,31 +108,20 @@ bool MyLoopFusion::areLoopsIndependent(Loop *Lprev, Loop *Lnext, Function &F,
   return true;
 }
 
-// Ottiene la variabile di induzione per i cicli non ruotati, in quanto GetInductionVariable(ScalarEvolution &) lo richiede per
-// i loop non canonici.
-PHINode *MyLoopFusion::getIVForNonRotatedLoops(Loop *L, ScalarEvolution &SE) {
+// Ottiene la variabile di induzione
+PHINode *MyLoopFusion::getInductionVariable(Loop *L, ScalarEvolution &SE) {
+  // Ottiene l'header del ciclo
+  BasicBlock *Header = L->getHeader();
 
-  //Se canonico restituisco immediatamente la variabile di induzione, in quanto la funzione funziona anche su loop non ruotati.
-  if (L->isCanonical(SE))
-    return L->getCanonicalInductionVariable();
-
-  // Altrimenti scorro le funzion phi del header ed estraggo la prima istruzione phi che può essere convertita a trip count polinomiale.
-  for (auto &PHI : L->getHeader()->phis()) {
-
-    //Converto da PHI a SCEV
-    const SCEV *PHISCEV = SE.getSCEV(&PHI);
-
-    //Verifico se può essere una variabile di induzione.
-    if (auto *PHIasADDREC = dyn_cast<SCEVAddRecExpr>(PHISCEV)) {
-      
-      //Se tale variabile fa riferimento al nostro loop allora la restituisco.
-      if (PHIasADDREC->getLoop() == L) {
-        for(auto U : PHI.users()) {
-            if(ICmpInst* Cmp = dyn_cast<ICmpInst>(U)) {
-                if (L->contains(Cmp)) {
-                    return &PHI;
-                }
-            }
+  // Iterate su tutte le istruzioni nell'header per trovare i PHINode
+  for (Instruction &I : *Header) {
+    if (PHINode *PN = dyn_cast<PHINode>(&I)) {
+      // Controlla se il PHINode è usato nella condizione del loop
+      for (auto *U : PN->users()) {
+        if (ICmpInst *Cmp = dyn_cast<ICmpInst>(U)) {
+          if (L->contains(Cmp)) {
+            return PN;
+          }
         }
       }
     }
@@ -160,8 +149,8 @@ Loop *MyLoopFusion::merge(Loop *Lprev, Loop *Lnext, Function &F,
   BasicBlock *NPH = Lnext->getLoopPreheader();
   BasicBlock *NE = Lnext->getExitBlock();
 
-  auto PIV = getIVForNonRotatedLoops(Lprev, SE);
-  auto NIV = getIVForNonRotatedLoops(Lnext, SE);
+  auto PIV = getInductionVariable(Lprev, SE);
+  auto NIV = getInductionVariable(Lnext, SE);
 
   // Sostituisce tutte le occorrenze della variabile di induzione del secondo
   // ciclo con quella del primo ciclo
