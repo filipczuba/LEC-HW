@@ -96,7 +96,13 @@ bool MyLoopFusion::areLoopsIndependent(Loop *Lprev, Loop *Lnext, Function &F,
             if (isa<LoadInst>(&I2) || isa<StoreInst>(&I2)) {
               auto DEP = DI.depends(&I, &I2, true);
               if (DEP) {
-                return false;
+                // Se la dipendenza è confusa, ovvero
+                // isConfused - Returns true if this dependence is confused
+                // (the compiler understands nothing and makes worst-case assumptions)
+                // ed è di tipo anti dependence, non posso fare il merge
+                if (!DEP->isConfused() && DEP->isAnti()) {
+                  return false;
+                }
               }
             }
           }
